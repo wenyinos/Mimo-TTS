@@ -3,6 +3,12 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
+def localProps = new Properties()
+def localPropsFile = rootProject.file("local.properties")
+if (localPropsFile.exists()) {
+    localProps.load(localPropsFile.newDataInputStream())
+}
+
 android {
     namespace = "com.mimotts.app"
     compileSdk = 35
@@ -13,7 +19,7 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0.0"
-        buildConfigField("String", "MIMO_API_KEY", "\"${project.findProperty("API_KEY") ?: ""}\"")
+        buildConfigField("String", "MIMO_API_KEY", "\"${localProps.getProperty("API_KEY", "")}\"")
     }
 
     buildTypes {
