@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MiMo TTS Studio</string>
+    <string name="tab_preset">预置音色</string>
+    <string name="tab_clone">音色克隆</string>
+    <string name="tab_design">音色设计</string>
+    <string name="label_text">合成文本</string>
+    <string name="label_style">风格指令（可选）</string>
+    <string name="label_voice">音色</string>
+    <string name="label_format">输出格式</string>
+    <string name="label_ref_audio">参考音频（3-10秒）</string>
+    <string name="label_backend">后端引擎</string>
+    <string name="label_language">语种</string>
+    <string name="label_voice_desc">音色描述</string>
+    <string name="label_optimize">智能优化文本</string>
+    <string name="btn_generate">生成语音</string>
+    <string name="btn_record">录音</string>
+    <string name="btn_stop">停止</string>
+    <string name="btn_play">播放</string>
+    <string name="btn_pick_audio">选择音频文件</string>
+    <string name="btn_stop_play">停止播放</string>
+    <string name="status_ready">就绪</string>
+    <string name="status_generating">正在生成...</string>
+    <string name="backend_mimo">MiMo VoiceClone</string>
+    <string name="backend_confucius">Confucius4-TTS</string>
+    <string-array name="voices">
+        <item>mimo_default</item>
+        <item>冰糖</item>
+        <item>茉莉</item>
+        <item>苏打</item>
+        <item>白桦</item>
+        <item>Mia</item>
+        <item>Chloe</item>
+        <item>Milo</item>
+        <item>Dean</item>
+    </string-array>
+    <string-array name="formats">
+        <item>wav</item>
+        <item>mp3</item>
+    </string-array>
+    <string-array name="languages">
+        <item>zh</item>
+        <item>en</item>
+        <item>ja</item>
+        <item>ko</item>
+        <item>de</item>
+        <item>fr</item>
+        <item>th</item>
+        <item>id</item>
+        <item>vi</item>
+        <item>es</item>
+        <item>pt</item>
+        <item>it</item>
+        <item>ru</item>
+        <item>ms</item>
+    </string-array>
+</resources>

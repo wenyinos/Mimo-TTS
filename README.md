@@ -1,6 +1,6 @@
 # MiMo TTS Studio
 
-基于小米 MiMo-V2.5-TTS 系列模型和 Confucius4-TTS 的语音合成 Web 应用，使用 Gradio 构建。
+基于小米 MiMo-V2.5-TTS 系列模型和 Confucius4-TTS 的语音合成应用，提供 Web 版（Gradio）和 Android 原生版。
 
 ## 功能
 
@@ -18,7 +18,7 @@
 - 通过自然语言描述生成任意音色
 - 支持智能文本优化（optimize_text_preview）
 
-## 快速开始
+## Web 版（Gradio）
 
 ### 1. 安装依赖
 
@@ -50,14 +50,45 @@ python app.py
 
 浏览器访问 `http://127.0.0.1:7860`。
 
-## 项目结构
+## Android 版
+
+原生 Android 应用，最低支持 Android 9.0（API 28），功能与 Web 版一致。
+
+### 构建方式
+
+通过 GitHub Actions 自动打包，无需本地开发环境：
+
+1. **Fork 或 clone 本仓库**
+
+2. **配置 Secrets**：在 GitHub 仓库 Settings → Secrets and variables → Actions 中添加：
+   - `MIMO_API_KEY`：你的 MiMo API Key
+
+3. **触发构建**：推送到 `main` 分支的 `android/` 目录变更会自动触发，也可在 Actions 页面手动运行
+
+4. **下载 APK**：构建完成后在 Actions → 对应 workflow → Artifacts 中下载 `mimo-tts-apk`
+
+### 项目结构
 
 ```
-├── app.py              # Gradio 前端界面
-├── backend.py          # TTS API 调用逻辑
-├── requirements.txt    # Python 依赖
-├── .env.example        # 环境变量模板
-└── .gitignore
+android/
+├── app/src/main/
+│   ├── AndroidManifest.xml
+│   ├── java/com/mimotts/app/
+│   │   ├── MainActivity.kt          # 主界面（TabLayout + ViewPager2）
+│   │   ├── api/
+│   │   │   ├── ApiClient.kt         # Retrofit 网络客户端
+│   │   │   ├── Models.kt            # API 数据模型
+│   │   │   └── TtsService.kt        # API 接口定义
+│   │   └── ui/
+│   │       ├── preset/PresetFragment.kt   # 预置音色
+│   │       ├── clone/CloneFragment.kt     # 音色克隆
+│   │       └── design/DesignFragment.kt   # 音色设计
+│   └── res/
+│       ├── layout/                   # 布局文件
+│       └── values/                   # 字符串、主题、颜色
+├── build.gradle                      # 项目级 Gradle 配置
+├── app/build.gradle                  # 应用级 Gradle 配置
+└── local.properties.example          # API Key 配置模板
 ```
 
 ## API 参考

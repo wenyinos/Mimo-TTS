@@ -217,3 +217,9 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 .claude/
+
+# Android
+android/local.properties
+android/.gradle/
+android/app/build/
+android/build/
