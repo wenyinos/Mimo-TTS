@@ -243,3 +243,28 @@ def tts_confucius(text: str, ref_audio: str, language: str):
 
     except Exception as e:
         return None, f"错误：{e}"
+
+
+def cleanup_audio_cache():
+    """清理临时目录中的所有音频文件，返回清理状态。"""
+    tmp_dir = tempfile.gettempdir()
+    audio_exts = (".wav", ".mp3", ".m4a", ".ogg", ".flac", ".pcm")
+    removed = 0
+    freed = 0
+
+    for name in os.listdir(tmp_dir):
+        if not name.lower().endswith(audio_exts):
+            continue
+        path = os.path.join(tmp_dir, name)
+        if not os.path.isfile(path):
+            continue
+        try:
+            size = os.path.getsize(path)
+            os.unlink(path)
+            removed += 1
+            freed += size
+        except OSError:
+            continue
+
+    size_str = f"{freed / 1024:.1f} KB" if freed < 1024 * 1024 else f"{freed / 1024 / 1024:.1f} MB"
+    return f"已清理 {removed} 个文件，释放 {size_str}" if removed else "无需清理"

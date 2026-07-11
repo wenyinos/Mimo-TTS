@@ -3,7 +3,7 @@ import os
 import gradio as gr
 from dotenv import load_dotenv
 
-from backend import CONFUCIUS_LANGUAGES, VOICES, tts_clone, tts_confucius, tts_design, tts_preset
+from backend import CONFUCIUS_LANGUAGES, VOICES, tts_clone, tts_confucius, tts_design, tts_preset, cleanup_audio_cache
 
 load_dotenv()
 APP_PASSWORD = os.environ.get("APP_PASSWORD", "").strip()
@@ -110,6 +110,12 @@ with gr.Blocks(**_blocks_kwargs) as demo:
                         t3_status = gr.Textbox(label="状态", interactive=False, elem_classes="status-box")
 
             t3_btn.click(tts_design, [t3_text, t3_desc, t3_opt, t3_fmt], [t3_audio, t3_status])
+
+        with gr.Row():
+            cleanup_btn = gr.Button("清理缓存", variant="secondary", size="sm")
+            cleanup_msg = gr.Textbox(show_label=False, interactive=False, elem_classes="status-box")
+
+        cleanup_btn.click(cleanup_audio_cache, [], [cleanup_msg])
 
     # ─── 密码验证逻辑 ───
     def _check_password(pwd):
