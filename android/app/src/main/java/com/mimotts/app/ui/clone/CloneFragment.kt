@@ -153,7 +153,7 @@ class CloneFragment : Fragment() {
         val messages = listOf(Message("user", ""), Message("assistant", text))
         val req = TtsRequest(model = "mimo-v2.5-tts-voiceclone", messages = messages, audio = AudioConfig(format = fmt, voice = voice))
 
-        val resp = ApiClient.mimoService.mimoTts(BuildConfig.MIMO_API_KEY, req)
+        val resp = ApiClient.mimoService.mimoTts("Bearer ${BuildConfig.MIMO_API_KEY}", req)
         val audioB64 = resp.choices.firstOrNull()?.message?.audio?.data ?: throw Exception("未返回音频数据")
         val bytes = android.util.Base64.decode(audioB64, android.util.Base64.DEFAULT)
         val ext = if (fmt == "mp3") ".mp3" else ".wav"

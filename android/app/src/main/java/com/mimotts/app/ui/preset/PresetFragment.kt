@@ -62,7 +62,7 @@ class PresetFragment : Fragment() {
 
         lifecycleScope.launch {
             try {
-                val resp = ApiClient.mimoService.mimoTts(BuildConfig.MIMO_API_KEY, req)
+                val resp = ApiClient.mimoService.mimoTts("Bearer ${BuildConfig.MIMO_API_KEY}", req)
                 val b64 = resp.choices.firstOrNull()?.message?.audio?.data
                     ?: throw Exception("未返回音频数据")
                 audioFile = decodeAudio(b64, fmt)

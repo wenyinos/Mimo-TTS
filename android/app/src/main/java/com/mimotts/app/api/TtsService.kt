@@ -9,7 +9,7 @@ interface TtsService {
     @POST("v1/chat/completions")
     @Headers("Content-Type: application/json")
     suspend fun mimoTts(
-        @Header("api-key") apiKey: String,
+        @Header("Authorization") auth: String,
         @Body request: TtsRequest
     ): TtsResponse
 
