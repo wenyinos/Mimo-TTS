@@ -21,7 +21,13 @@ css = """
 .status-box textarea { font-size: 0.85em !important; }
 """
 
-with gr.Blocks(title="MiMo TTS Studio") as demo:
+# Gradio 6.x: theme/css in Blocks(); 4.x~5.x: in launch()
+_major = int(gr.__version__.split(".")[0])
+_blocks_kwargs = dict(title="MiMo TTS Studio")
+if _major < 6:
+    _blocks_kwargs.update(theme=theme, css=css)
+
+with gr.Blocks(**_blocks_kwargs) as demo:
     # ─── 密码验证层 ───
     with gr.Column(visible=bool(APP_PASSWORD)) as auth_gate:
         gr.Markdown("## 🔐 访问验证")
@@ -115,4 +121,7 @@ with gr.Blocks(title="MiMo TTS Studio") as demo:
     pwd_input.submit(_check_password, [pwd_input], [auth_gate, main_content, pwd_msg])
 
 if __name__ == "__main__":
-    demo.launch(theme=theme, css=css, show_error=True)
+    launch_kwargs = dict(show_error=True)
+    if _major >= 6:
+        launch_kwargs.update(theme=theme, css=css)
+    demo.launch(**launch_kwargs)
