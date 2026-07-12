@@ -116,16 +116,9 @@ class CloneFragment : Fragment() {
 
     private fun copyUriToFile(uri: Uri) {
         try {
-            val mime = requireContext().contentResolver.getType(uri) ?: ""
-            val ext = when {
-                mime.contains("wav") -> "wav"
-                mime.contains("mpeg") || mime.contains("mp3") -> "mp3"
-                mime.contains("mp4") || mime.contains("m4a") -> "m4a"
-                mime.contains("ogg") -> "ogg"
-                mime.contains("flac") -> "flac"
-                else -> "m4a"  // 未知格式走转换
-            }
-            val file = File(requireContext().cacheDir, "ref_${System.currentTimeMillis()}.$ext")
+            // 保留原始文件名和扩展名
+            val origName = uri.lastPathSegment?.substringAfterLast('/') ?: "audio.wav"
+            val file = File(requireContext().cacheDir, origName)
             requireContext().contentResolver.openInputStream(uri)?.use { input ->
                 file.outputStream().use { output -> input.copyTo(output) }
             }
