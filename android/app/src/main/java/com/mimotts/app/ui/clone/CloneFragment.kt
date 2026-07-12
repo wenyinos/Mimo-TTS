@@ -199,13 +199,19 @@ class CloneFragment : Fragment() {
         decoder.configure(srcFormat, null, null, 0)
         decoder.start()
 
+        // 检查解码器输出格式
+        val outFormat = decoder.outputFormat
+        val isFloat = if (android.os.Build.VERSION.SDK_INT >= 24) {
+            outFormat.containsKey(android.media.MediaFormat.KEY_PCM_ENCODING) &&
+                outFormat.getInteger(android.media.MediaFormat.KEY_PCM_ENCODING) == android.media.AudioFormat.ENCODING_PCM_FLOAT
+        } else false
+
         val pcmData = mutableListOf<Byte>()
         val bufferInfo = MediaCodec.BufferInfo()
         var inputDone = false
         var outputDone = false
 
         while (!outputDone) {
-            // 尝试送入输入数据
             if (!inputDone) {
                 val inIdx = decoder.dequeueInputBuffer(10000)
                 if (inIdx >= 0) {
@@ -220,13 +226,24 @@ class CloneFragment : Fragment() {
                     }
                 }
             }
-            // 取出输出数据
             val outIdx = decoder.dequeueOutputBuffer(bufferInfo, 10000)
             if (outIdx >= 0) {
                 val outBuf = decoder.getOutputBuffer(outIdx)!!
                 val arr = ByteArray(bufferInfo.size)
                 outBuf.get(arr)
-                pcmData.addAll(arr.toList())
+                if (isFloat) {
+                    // float32 → int16
+                    val floatBuf = ByteBuffer.wrap(arr).order(ByteOrder.LITTLE_ENDIAN).asFloatBuffer()
+                    val int16Arr = ByteArray(floatBuf.remaining() * 2)
+                    val shortBuf = ByteBuffer.wrap(int16Arr).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer()
+                    while (floatBuf.hasRemaining()) {
+                        val s = (floatBuf.get().coerceIn(-1f, 1f) * 32767f).toInt().toShort()
+                        shortBuf.put(s)
+                    }
+                    pcmData.addAll(int16Arr.toList())
+                } else {
+                    pcmData.addAll(arr.toList())
+                }
                 decoder.releaseOutputBuffer(outIdx, false)
                 if (bufferInfo.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) outputDone = true
             }
@@ -270,7 +287,8 @@ class CloneFragment : Fragment() {
                 (sum / srcCh).toShort()
             }
         } else samples
-        if (srcRate == dstRate) return shortsToBytes(mono)
+        if (mono.isEmpty()) return ByteArray(0)
+        if (srcRate == dstRate || mono.size < 2) return shortsToBytes(mono)
         val ratio = srcRate.toDouble() / dstRate
         val outLen = (mono.size / ratio).toInt().coerceAtLeast(1)
         val out = ShortArray(outLen)
