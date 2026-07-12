@@ -35,8 +35,8 @@
         <item>Dean</item>
     </string-array>
     <string-array name="formats">
-        <item>wav</item>
         <item>mp3</item>
+        <item>wav</item>
     </string-array>
     <string-array name="languages">
         <item>zh</item>
