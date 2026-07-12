@@ -39,15 +39,16 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: mimo-tts-apk
-          path: android/app/build/outputs/apk/release/mimo-tts.apk
+          path: android/app/build/outputs/apk/release/mimo-tts-v*.apk
 
       - name: Create Tag and Release
         if: success()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="v1.0.$(date +%Y%m%d%H%M%S)"
-          gh release create "$TAG" \
-            android/app/build/outputs/apk/release/mimo-tts.apk \
+          APK=$(ls android/app/build/outputs/apk/release/mimo-tts-v*.apk)
+          VERSION=$(basename "$APK" .apk | sed 's/mimo-tts-//')
+          TAG="$VERSION.$(date +%Y%m%d%H%M%S)"
+          gh release create "$TAG" "$APK" \
             --title "MiMo TTS Studio $TAG" \
             --notes "Android APK build from $(git rev-parse --short HEAD)"
