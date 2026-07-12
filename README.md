@@ -20,13 +20,7 @@
 
 ## Web 版（Gradio）
 
-### 1. 安装依赖
-
-```bash
-pip install -r requirements.txt
-```
-
-### 2. 配置 API Key
+### 1. 配置 API Key
 
 ```bash
 cp .env.example .env
@@ -42,13 +36,30 @@ API Key 可在 [MiMo 开放平台](https://mimo.mi.com/) 控制台获取。
 
 > Confucius4-TTS 后端无需 API Key，直接调用公开服务。
 
-### 3. 启动
+### 2. 启动
+
+#### 使用 uv（推荐）
+
+无需手动安装依赖，uv 自动创建虚拟环境并解析依赖：
 
 ```bash
+# 安装 uv（如未安装）
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# 直接运行
+uv run app.py
+```
+
+#### 使用 pip
+
+```bash
+pip install -r requirements.txt
 python app.py
 ```
 
 浏览器访问 `http://127.0.0.1:7860`。
+
+> 需要系统安装 ffmpeg：`sudo apt install ffmpeg`（Ubuntu）或 `brew install ffmpeg`（macOS）
 
 ## Android 版
 

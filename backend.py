@@ -3,9 +3,7 @@ import os
 import subprocess
 import tempfile
 
-import numpy as np
 import requests
-import soundfile as sf
 from dotenv import load_dotenv
 from openai import OpenAI
 
@@ -42,37 +40,6 @@ def _decode_audio(audio_data: str, fmt: str) -> str:
     return tmp.name
 
 
-def _stream_audio(model: str, messages: list, audio_cfg: dict) -> tuple:
-    """流式调用 TTS API，拼接 PCM16 并保存为 wav，返回 (路径, 状态)。"""
-    try:
-        completion = client.chat.completions.create(
-            model=model,
-            messages=messages,
-            audio={**audio_cfg, "format": "pcm16"},
-            stream=True,
-        )
-
-        collected = np.array([], dtype=np.float32)
-        for chunk in completion:
-            if not chunk.choices:
-                continue
-            delta = chunk.choices[0].delta
-            audio = getattr(delta, "audio", None)
-            if audio is not None:
-                pcm_bytes = base64.b64decode(audio["data"])
-                np_pcm = np.frombuffer(pcm_bytes, dtype=np.int16).astype(np.float32) / 32768.0
-                collected = np.concatenate((collected, np_pcm))
-
-        if len(collected) == 0:
-            return None, "错误：未收到任何音频数据"
-
-        tmp = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
-        sf.write(tmp.name, collected, samplerate=24000)
-        return tmp.name, f"成功！音频时长 {len(collected) / 24000:.1f} 秒"
-    except Exception as e:
-        return None, f"错误：{e}"
-
-
 def tts_preset(text: str, style: str, voice: str, fmt: str):
     """mimo-v2.5-tts 预置音色合成。"""
     if not text.strip():
@@ -83,29 +50,24 @@ def tts_preset(text: str, style: str, voice: str, fmt: str):
         messages.append({"role": "user", "content": style.strip()})
     messages.append({"role": "assistant", "content": text.strip()})
 
-    audio_cfg = {"voice": voice}
-    if fmt != "wav":
-        audio_cfg["format"] = fmt
+    audio_cfg = {"voice": voice, "format": fmt}
 
-    if fmt != "wav":
-        try:
-            completion = client.chat.completions.create(
-                model="mimo-v2.5-tts",
-                messages=messages,
-                audio=audio_cfg,
-                stream=False,
-            )
-            msg = completion.choices[0].message
-            path = _decode_audio(msg.audio.data, fmt)
-            return path, f"成功！格式: {fmt}"
-        except Exception as e:
-            return None, f"错误：{e}"
-
-    return _stream_audio("mimo-v2.5-tts", messages, audio_cfg)
+    try:
+        completion = client.chat.completions.create(
+            model="mimo-v2.5-tts",
+            messages=messages,
+            audio=audio_cfg,
+            stream=False,
+        )
+        msg = completion.choices[0].message
+        path = _decode_audio(msg.audio.data, fmt)
+        return path, f"成功！格式: {fmt}"
+    except Exception as e:
+        return None, f"错误：{e}"
 
 
 def tts_clone(text: str, ref_audio: str, fmt: str):
-    """mimo-v2.5-tts-voiceclone 音色克隆合成。"""
+    """mimo-v2.5-tts-voiceclone 音色克隆合成（始终非流式，API 流式暂未上线）。"""
     if not text.strip():
         return None, "请输入要合成的文本"
     if ref_audio is None:
@@ -125,24 +87,20 @@ def tts_clone(text: str, ref_audio: str, fmt: str):
         {"role": "user", "content": ""},
         {"role": "assistant", "content": text.strip()},
     ]
-    audio_cfg = {"voice": voice_b64}
+    audio_cfg = {"voice": voice_b64, "format": fmt}
 
-    if fmt != "wav":
-        audio_cfg["format"] = fmt
-        try:
-            completion = client.chat.completions.create(
-                model="mimo-v2.5-tts-voiceclone",
-                messages=messages,
-                audio=audio_cfg,
-                stream=False,
-            )
-            msg = completion.choices[0].message
-            path = _decode_audio(msg.audio.data, fmt)
-            return path, f"成功！格式: {fmt}"
-        except Exception as e:
-            return None, f"错误：{e}"
-
-    return _stream_audio("mimo-v2.5-tts-voiceclone", messages, audio_cfg)
+    try:
+        completion = client.chat.completions.create(
+            model="mimo-v2.5-tts-voiceclone",
+            messages=messages,
+            audio=audio_cfg,
+            stream=False,
+        )
+        msg = completion.choices[0].message
+        path = _decode_audio(msg.audio.data, fmt)
+        return path, f"成功！格式: {fmt}"
+    except Exception as e:
+        return None, f"错误：{e}"
 
 
 def tts_design(text: str, voice_desc: str, optimize: bool, fmt: str):
@@ -156,28 +114,24 @@ def tts_design(text: str, voice_desc: str, optimize: bool, fmt: str):
     if not optimize:
         messages.append({"role": "assistant", "content": text.strip()})
 
-    audio_cfg = {"optimize_text_preview": optimize}
+    audio_cfg = {"optimize_text_preview": optimize, "format": fmt}
 
-    if fmt != "wav":
-        audio_cfg["format"] = fmt
-        try:
-            completion = client.chat.completions.create(
-                model="mimo-v2.5-tts-voicedesign",
-                messages=messages,
-                audio=audio_cfg,
-                stream=False,
-            )
-            msg = completion.choices[0].message
-            path = _decode_audio(msg.audio.data, fmt)
-            preview = getattr(msg, "final_text_preview", "")
-            status = f"成功！格式: {fmt}"
-            if preview:
-                status += f"\n优化后文本: {preview}"
-            return path, status
-        except Exception as e:
-            return None, f"错误：{e}"
-
-    return _stream_audio("mimo-v2.5-tts-voicedesign", messages, audio_cfg)
+    try:
+        completion = client.chat.completions.create(
+            model="mimo-v2.5-tts-voicedesign",
+            messages=messages,
+            audio=audio_cfg,
+            stream=False,
+        )
+        msg = completion.choices[0].message
+        path = _decode_audio(msg.audio.data, fmt)
+        preview = getattr(msg, "final_text_preview", "")
+        status = f"成功！格式: {fmt}"
+        if preview:
+            status += f"\n优化后文本: {preview}"
+        return path, status
+    except Exception as e:
+        return None, f"错误：{e}"
 
 
 CONFUCIUS_BASE = "https://confucius4-tts.youdao.com/gradio"

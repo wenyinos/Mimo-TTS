@@ -53,7 +53,7 @@ with gr.Blocks(**_blocks_kwargs) as demo:
                         t1_style = gr.Textbox(label="风格指令（可选）", lines=2, placeholder="如：用温柔的语气，语速稍慢")
                         with gr.Row():
                             t1_voice = gr.Dropdown(choices=VOICES, value="mimo_default", label="音色", scale=2)
-                            t1_fmt = gr.Dropdown(choices=["wav", "mp3"], value="wav", label="输出格式", scale=1)
+                            t1_fmt = gr.Dropdown(choices=["mp3", "wav"], value="mp3", label="输出格式", scale=1)
                         t1_btn = gr.Button("生成语音", variant="primary", size="lg")
                     with gr.Column(scale=1):
                         t1_audio = gr.Audio(label="合成结果", type="filepath")
@@ -76,7 +76,7 @@ with gr.Blocks(**_blocks_kwargs) as demo:
                             choices=CONFUCIUS_LANGUAGES, value="zh",
                             label="语种（Confucius4）", visible=False,
                         )
-                        t2_fmt = gr.Dropdown(choices=["wav", "mp3"], value="wav", label="输出格式")
+                        t2_fmt = gr.Dropdown(choices=["mp3", "wav"], value="mp3", label="输出格式")
                         t2_btn = gr.Button("生成语音", variant="primary", size="lg")
                     with gr.Column(scale=1):
                         t2_audio = gr.Audio(label="合成结果", type="filepath")
@@ -103,7 +103,7 @@ with gr.Blocks(**_blocks_kwargs) as demo:
                         t3_text = gr.Textbox(label="合成文本（可选，勾选智能优化时可省略）", lines=3, placeholder="输入要转为语音的文本...")
                         with gr.Row():
                             t3_opt = gr.Checkbox(label="智能优化文本", value=False)
-                            t3_fmt = gr.Dropdown(choices=["wav", "mp3"], value="wav", label="输出格式")
+                            t3_fmt = gr.Dropdown(choices=["mp3", "wav"], value="mp3", label="输出格式")
                         t3_btn = gr.Button("生成语音", variant="primary", size="lg")
                     with gr.Column(scale=1):
                         t3_audio = gr.Audio(label="合成结果", type="filepath")
