@@ -42,8 +42,16 @@ API Key 可在 [MiMo 开放平台](https://mimo.mi.com/) 控制台获取。
 #### 使用 uv（推荐）
 
 ```bash
+# 安装 uv（如未安装）
 curl -LsSf https://astral.sh/uv/install.sh | sh
-uv run app.py
+
+# 创建虚拟环境并安装依赖
+uv venv
+uv pip install -r requirements.txt
+
+# 激活虚拟环境并运行
+source .venv/bin/activate
+python app.py
 ```
 
 #### 使用 pip
