@@ -89,7 +89,7 @@ class CloneFragment : Fragment() {
 
     @Suppress("DEPRECATION")
     private fun startRecording() {
-        val file = File(requireContext().cacheDir, "ref_${System.currentTimeMillis()}.wav")
+        val file = File(requireContext().cacheDir, "ref_${System.currentTimeMillis()}.m4a")
         recorder = MediaRecorder().apply {
             setAudioSource(MediaRecorder.AudioSource.MIC)
             setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
@@ -116,7 +116,16 @@ class CloneFragment : Fragment() {
 
     private fun copyUriToFile(uri: Uri) {
         try {
-            val file = File(requireContext().cacheDir, "ref_${System.currentTimeMillis()}.wav")
+            val mime = requireContext().contentResolver.getType(uri) ?: ""
+            val ext = when {
+                mime.contains("wav") -> "wav"
+                mime.contains("mpeg") || mime.contains("mp3") -> "mp3"
+                mime.contains("mp4") || mime.contains("m4a") -> "m4a"
+                mime.contains("ogg") -> "ogg"
+                mime.contains("flac") -> "flac"
+                else -> "m4a"  // 未知格式走转换
+            }
+            val file = File(requireContext().cacheDir, "ref_${System.currentTimeMillis()}.$ext")
             requireContext().contentResolver.openInputStream(uri)?.use { input ->
                 file.outputStream().use { output -> input.copyTo(output) }
             }
@@ -153,12 +162,13 @@ class CloneFragment : Fragment() {
     private suspend fun generateMiMo(text: String, ref: File) {
         val fmt = binding.spinnerFormat.text.toString()
 
-        // 转换为 24kHz 单声道 WAV（API voice 字段只支持 wav/mp3 MIME）
-        val wavFile = withContext(Dispatchers.IO) { convertToWav(ref) }
-        val voiceBytes = wavFile.readBytes()
-        if (wavFile.absolutePath != ref.absolutePath) wavFile.delete()
+        // wav/mp3 直接发送，其他格式转为 WAV
+        val voiceFile = withContext(Dispatchers.IO) { convertToWav(ref) }
+        val voiceBytes = voiceFile.readBytes()
+        if (voiceFile.absolutePath != ref.absolutePath) voiceFile.delete()
+        val mime = if (ref.extension.lowercase() == "mp3") "audio/mpeg" else "audio/wav"
         val b64 = android.util.Base64.encodeToString(voiceBytes, android.util.Base64.NO_WRAP)
-        val voice = "data:audio/wav;base64,$b64"
+        val voice = "data:$mime;base64,$b64"
 
         val messages = listOf(Message("user", ""), Message("assistant", text))
         val req = TtsRequest(model = "mimo-v2.5-tts-voiceclone", messages = messages, audio = AudioConfig(format = fmt, voice = voice))
@@ -177,7 +187,8 @@ class CloneFragment : Fragment() {
     }
 
     private fun convertToWav(src: File): File {
-        if (src.extension.lowercase() == "wav") return src
+        val ext = src.extension.lowercase()
+        if (ext == "wav" || ext == "mp3") return src
         val outFile = File(requireContext().cacheDir, "conv_${System.currentTimeMillis()}.wav")
         val extractor = MediaExtractor()
         extractor.setDataSource(src.absolutePath)
