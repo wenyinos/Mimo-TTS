@@ -1,6 +1,5 @@
 import base64
 import os
-import subprocess
 import tempfile
 
 import requests
@@ -15,19 +14,6 @@ client = OpenAI(
 )
 
 VOICES = ["mimo_default", "冰糖", "茉莉", "苏打", "白桦", "Mia", "Chloe", "Milo", "Dean"]
-
-
-def _convert_to_wav(src_path: str) -> str:
-    """将任意音频格式转换为 WAV，返回转换后文件路径。已是 WAV 则直接返回。"""
-    if src_path.lower().endswith(".wav"):
-        return src_path
-    tmp = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
-    tmp.close()
-    subprocess.run(
-        ["ffmpeg", "-y", "-i", src_path, "-ar", "24000", "-ac", "1", tmp.name],
-        capture_output=True, check=True,
-    )
-    return tmp.name
 
 
 def _decode_audio(audio_data: str, fmt: str) -> str:
@@ -74,12 +60,14 @@ def tts_clone(text: str, ref_audio: str, fmt: str):
         return None, "请上传参考音频文件"
 
     try:
-        wav_path = _convert_to_wav(ref_audio)
-        with open(wav_path, "rb") as f:
+        with open(ref_audio, "rb") as f:
             voice_bytes = f.read()
-        if wav_path != ref_audio:
-            os.unlink(wav_path)
-        voice_b64 = f"data:audio/wav;base64,{base64.b64encode(voice_bytes).decode()}"
+        ext = os.path.splitext(ref_audio)[1].lower()
+        mime = {
+            ".mp3": "audio/mpeg", ".m4a": "audio/mp4",
+            ".ogg": "audio/ogg", ".flac": "audio/flac",
+        }.get(ext, "audio/wav")
+        voice_b64 = f"data:{mime};base64,{base64.b64encode(voice_bytes).decode()}"
     except Exception as e:
         return None, f"读取音频失败：{e}"
 
@@ -148,16 +136,13 @@ def tts_confucius(text: str, ref_audio: str, language: str):
         return None, "请上传参考音频文件"
 
     try:
-        # 1. 上传参考音频（转换为 WAV）
-        wav_path = _convert_to_wav(ref_audio)
-        with open(wav_path, "rb") as f:
+        # 1. 上传参考音频
+        with open(ref_audio, "rb") as f:
             resp = requests.post(
                 f"{CONFUCIUS_BASE}/upload",
-                files={"files": ("ref.wav", f, "audio/wav")},
+                files={"files": ("ref_audio", f, "audio/wav")},
                 timeout=30,
             )
-        if wav_path != ref_audio:
-            os.unlink(wav_path)
         resp.raise_for_status()
         uploaded_path = resp.json()[0]
 

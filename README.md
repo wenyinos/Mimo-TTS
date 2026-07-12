@@ -55,8 +55,6 @@ python app.py
 
 浏览器访问 `http://127.0.0.1:7860`。
 
-> 需要系统安装 ffmpeg：`sudo apt install ffmpeg`（Ubuntu）或 `brew install ffmpeg`（macOS）
-
 ## Android 版
 
 原生 Android 应用，最低支持 Android 9.0（API 28），功能与 Web 版一致。
