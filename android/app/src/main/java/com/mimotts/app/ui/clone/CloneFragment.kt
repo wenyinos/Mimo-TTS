@@ -173,15 +173,15 @@ class CloneFragment : Fragment() {
     private fun convertToWav(src: File): File {
         if (src.extension.lowercase() == "wav") return src
         val outFile = File(requireContext().cacheDir, "conv_${System.currentTimeMillis()}.wav")
+        val targetSampleRate = 24000
+        val targetChannels = 1
         val extractor = MediaExtractor()
         extractor.setDataSource(src.absolutePath)
         extractor.selectTrack(0)
-        val format = extractor.getTrackFormat(0)
-        val sampleRate = format.getInteger(android.media.MediaFormat.KEY_SAMPLE_RATE)
-        val channels = format.getInteger(android.media.MediaFormat.KEY_CHANNEL_COUNT)
-        val codec = format.getString(android.media.MediaFormat.KEY_MIME) ?: throw Exception("无法识别音频格式")
+        val srcFormat = extractor.getTrackFormat(0)
+        val codec = srcFormat.getString(android.media.MediaFormat.KEY_MIME) ?: throw Exception("无法识别音频格式")
         val decoder = MediaCodec.createDecoderByType(codec)
-        decoder.configure(format, null, null, 0)
+        decoder.configure(srcFormat, null, null, 0)
         decoder.start()
 
         val pcmData = mutableListOf<Byte>()
@@ -213,26 +213,61 @@ class CloneFragment : Fragment() {
         decoder.stop(); decoder.release()
         extractor.release()
 
-        val pcm = pcmData.toByteArray()
-        val totalDataLen = pcm.size + 36
-        val byteRate = sampleRate * channels * 2
+        // 重采样到 24kHz 单声道 16bit PCM（与 Web 端一致）
+        val srcSampleRate = srcFormat.getInteger(android.media.MediaFormat.KEY_SAMPLE_RATE)
+        val srcChannels = srcFormat.getInteger(android.media.MediaFormat.KEY_CHANNEL_COUNT)
+        val rawPcm = pcmData.toByteArray()
+        val resampled = resamplePcm(rawPcm, srcSampleRate, srcChannels, targetSampleRate, targetChannels)
+
+        val byteRate = targetSampleRate * targetChannels * 2
         FileOutputStream(outFile).use { fos ->
             fos.write("RIFF".toByteArray())
-            fos.write(intToLittleEndian(totalDataLen))
+            fos.write(intToLittleEndian(resampled.size + 36))
             fos.write("WAVE".toByteArray())
             fos.write("fmt ".toByteArray())
             fos.write(intToLittleEndian(16))
             fos.write(shortToLittleEndian(1))
-            fos.write(shortToLittleEndian(channels.toShort()))
-            fos.write(intToLittleEndian(sampleRate))
+            fos.write(shortToLittleEndian(targetChannels.toShort()))
+            fos.write(intToLittleEndian(targetSampleRate))
             fos.write(intToLittleEndian(byteRate))
-            fos.write(shortToLittleEndian((channels * 2).toShort()))
+            fos.write(shortToLittleEndian((targetChannels * 2).toShort()))
             fos.write(shortToLittleEndian(16))
             fos.write("data".toByteArray())
-            fos.write(intToLittleEndian(pcm.size))
-            fos.write(pcm)
+            fos.write(intToLittleEndian(resampled.size))
+            fos.write(resampled)
         }
         return outFile
+    }
+
+    private fun resamplePcm(pcm: ByteArray, srcRate: Int, srcCh: Int, dstRate: Int, dstCh: Int): ByteArray {
+        val samples = ShortArray(pcm.size / 2)
+        ByteBuffer.wrap(pcm).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().get(samples)
+        // 转为单声道（取平均）
+        val mono = if (srcCh > 1) {
+            ShortArray(samples.size / srcCh) { i ->
+                var sum = 0L
+                for (c in 0 until srcCh) sum += samples[i * srcCh + c]
+                (sum / srcCh).toShort()
+            }
+        } else samples
+        // 线性插值重采样
+        if (srcRate == dstRate) return shortsToBytes(mono)
+        val ratio = srcRate.toDouble() / dstRate
+        val outLen = (mono.size / ratio).toInt()
+        val out = ShortArray(outLen)
+        for (i in 0 until outLen) {
+            val pos = i * ratio
+            val idx = pos.toInt().coerceAtMost(mono.size - 2)
+            val frac = (pos - idx).toFloat()
+            out[i] = (mono[idx] * (1 - frac) + mono[idx + 1] * frac).toInt().toShort()
+        }
+        return shortsToBytes(out)
+    }
+
+    private fun shortsToBytes(s: ShortArray): ByteArray {
+        val buf = ByteBuffer.allocate(s.size * 2).order(ByteOrder.LITTLE_ENDIAN)
+        buf.asShortBuffer().put(s)
+        return buf.array()
     }
 
     private fun intToLittleEndian(v: Int): ByteArray =

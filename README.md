@@ -7,11 +7,11 @@
 ### 预置音色（mimo-v2.5-tts）
 - 9 种内置音色：mimo_default、冰糖、茉莉、苏打、白桦、Mia、Chloe、Milo、Dean
 - 支持风格指令控制（语速、情绪、角色扮演等）
-- 输出格式：wav / mp3
+- 输出格式：mp3 / wav
 
 ### 音色克隆
 支持两个后端引擎：
-- **MiMo VoiceClone**（mimo-v2.5-tts-voiceclone）— 上传参考音频，克隆音色
+- **MiMo VoiceClone**（mimo-v2.5-tts-voiceclone）— 上传参考音频，自动转换为 24kHz WAV 后克隆音色
 - **Confucius4-TTS** — 支持 14 种语言（中/英/日/韩/德/法/泰/印尼/越南/西/葡/意/俄/马来）
 
 ### 音色设计（mimo-v2.5-tts-voicedesign）
@@ -20,16 +20,17 @@
 
 ## Web 版（Gradio）
 
-### 1. 配置 API Key
+### 1. 配置
 
 ```bash
 cp .env.example .env
 ```
 
-编辑 `.env`，填入你的 MiMo API Key：
+编辑 `.env`：
 
 ```
-MIMO_API_KEY=your_api_key_here
+MIMO_API_KEY=your_api_key_here    # MiMo API Key（必填）
+APP_PASSWORD=your_password         # 访问密码（可选，为空则无密码）
 ```
 
 API Key 可在 [MiMo 开放平台](https://mimo.mi.com/) 控制台获取。
@@ -40,13 +41,8 @@ API Key 可在 [MiMo 开放平台](https://mimo.mi.com/) 控制台获取。
 
 #### 使用 uv（推荐）
 
-无需手动安装依赖，uv 自动创建虚拟环境并解析依赖：
-
 ```bash
-# 安装 uv（如未安装）
 curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# 直接运行
 uv run app.py
 ```
 
@@ -65,42 +61,25 @@ python app.py
 
 原生 Android 应用，最低支持 Android 9.0（API 28），功能与 Web 版一致。
 
-### 构建方式
+### 下载
 
-通过 GitHub Actions 自动打包，无需本地开发环境：
+从 [Releases](https://github.com/wenyinos/Mimo-TTS/releases/latest) 下载最新 APK（`mimo-tts-v*.apk`）。
 
-1. **Fork 或 clone 本仓库**
+### 构建
 
-2. **配置 Secrets**：在 GitHub 仓库 Settings → Secrets and variables → Actions 中添加：
-   - `MIMO_API_KEY`：你的 MiMo API Key
+通过 GitHub Actions 自动打包：
 
-3. **触发构建**：推送到 `main` 分支的 `android/` 目录变更会自动触发，也可在 Actions 页面手动运行
+1. Fork 或 clone 本仓库
+2. 在 GitHub 仓库 Settings → Secrets → Actions 中添加 `MIMO_API_KEY`
+3. 推送代码或在 Actions 页面手动触发构建
+4. 构建完成后在 Releases 页面下载 APK
 
-4. **下载 APK**：构建完成后在 Actions → 对应 workflow → Artifacts 中下载 `mimo-tts-apk`
+### 版本历史
 
-### 项目结构
-
-```
-android/
-├── app/src/main/
-│   ├── AndroidManifest.xml
-│   ├── java/com/mimotts/app/
-│   │   ├── MainActivity.kt          # 主界面（TabLayout + ViewPager2）
-│   │   ├── api/
-│   │   │   ├── ApiClient.kt         # Retrofit 网络客户端
-│   │   │   ├── Models.kt            # API 数据模型
-│   │   │   └── TtsService.kt        # API 接口定义
-│   │   └── ui/
-│   │       ├── preset/PresetFragment.kt   # 预置音色
-│   │       ├── clone/CloneFragment.kt     # 音色克隆
-│   │       └── design/DesignFragment.kt   # 音色设计
-│   └── res/
-│       ├── layout/                   # 布局文件
-│       └── values/                   # 字符串、主题、颜色
-├── build.gradle                      # 项目级 Gradle 配置
-├── app/build.gradle                  # 应用级 Gradle 配置
-└── local.properties.example          # API Key 配置模板
-```
+| 版本 | 说明 |
+|------|------|
+| v1.1.0 | 默认 mp3 格式、音频自动转换为 24kHz WAV、非流式合成 |
+| v1.0.0 | 初始版本 |
 
 ## API 参考
 
