@@ -7,6 +7,7 @@ from backend import CONFUCIUS_LANGUAGES, VOICES, tts_clone, tts_confucius, tts_d
 
 load_dotenv()
 APP_PASSWORD = os.environ.get("APP_PASSWORD", "").strip()
+GRADIO_SHARE = os.environ.get("GRADIO_SHARE", "").strip().lower() in ("1", "true", "yes")
 
 theme = gr.themes.Soft(
     primary_hue=gr.themes.colors.orange,
@@ -127,7 +128,7 @@ with gr.Blocks(**_blocks_kwargs) as demo:
     pwd_input.submit(_check_password, [pwd_input], [auth_gate, main_content, pwd_msg])
 
 if __name__ == "__main__":
-    launch_kwargs = dict(show_error=True)
+    launch_kwargs = dict(show_error=True, share=GRADIO_SHARE, server_name="0.0.0.0")
     if _major >= 6:
         launch_kwargs.update(theme=theme, css=css)
     demo.launch(**launch_kwargs)
