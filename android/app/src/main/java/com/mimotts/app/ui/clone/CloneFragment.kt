@@ -274,7 +274,25 @@ class CloneFragment : Fragment() {
             fos.write(intLe(resampled.size))
             fos.write(resampled)
         }
+        // 验证 WAV 文件头
+        verifyWavFile(outFile)
         return outFile
+    }
+
+    private fun verifyWavFile(file: File) {
+        val bytes = file.readBytes()
+        if (bytes.size < 44) throw Exception("WAV 文件太小: ${bytes.size}")
+        val riff = String(bytes, 0, 4)
+        val wave = String(bytes, 8, 4)
+        val fmt = String(bytes, 12, 4)
+        if (riff != "RIFF" || wave != "WAVE" || fmt != "fmt ") {
+            throw Exception("WAV 头无效: riff=$riff wave=$wave fmt=$fmt")
+        }
+        val dataSize = ByteBuffer.wrap(bytes, 40, 4).order(ByteOrder.LITTLE_ENDIAN).int
+        val expectedSize = bytes.size - 44
+        if (dataSize != expectedSize) {
+            throw Exception("WAV data 大小不匹配: header=$dataSize actual=$expectedSize")
+        }
     }
 
     private fun resamplePcm(pcm: ByteArray, srcRate: Int, srcCh: Int, dstRate: Int, dstCh: Int): ByteArray {

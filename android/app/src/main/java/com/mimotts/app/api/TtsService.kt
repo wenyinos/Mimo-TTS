@@ -14,9 +14,9 @@ interface TtsService {
     ): TtsResponse
 
     @Multipart
-    @POST("upload")
+    @POST
     suspend fun confuciusUpload(
-        @Url baseUrl: String,
+        @Url url: String,
         @Part file: MultipartBody.Part
     ): List<String>
 
