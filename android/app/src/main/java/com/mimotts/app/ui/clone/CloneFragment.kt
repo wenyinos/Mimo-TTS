@@ -2,6 +2,8 @@ package com.mimotts.app.ui.clone
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.media.MediaCodec
+import android.media.MediaExtractor
 import android.media.MediaPlayer
 import android.media.MediaRecorder
 import android.net.Uri
@@ -18,12 +20,17 @@ import com.mimotts.app.BuildConfig
 import com.mimotts.app.R
 import com.mimotts.app.api.*
 import com.mimotts.app.databinding.FragmentCloneBinding
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import retrofit2.HttpException
 import java.io.File
+import java.io.FileOutputStream
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 
 class CloneFragment : Fragment() {
     private var _binding: FragmentCloneBinding? = null
@@ -146,17 +153,12 @@ class CloneFragment : Fragment() {
     private suspend fun generateMiMo(text: String, ref: File) {
         val fmt = binding.spinnerFormat.text.toString()
 
-        // 直接读取原始音频文件（API 支持 mp3/flac/m4a/wav/ogg）
-        val voiceBytes = ref.readBytes()
-        val mime = when (ref.extension.lowercase()) {
-            "mp3" -> "audio/mpeg"
-            "m4a" -> "audio/mp4"
-            "ogg" -> "audio/ogg"
-            "flac" -> "audio/flac"
-            else -> "audio/wav"
-        }
+        // 转换为 24kHz 单声道 WAV（API voice 字段只支持 wav/mp3 MIME）
+        val wavFile = withContext(Dispatchers.IO) { convertToWav(ref) }
+        val voiceBytes = wavFile.readBytes()
+        if (wavFile.absolutePath != ref.absolutePath) wavFile.delete()
         val b64 = android.util.Base64.encodeToString(voiceBytes, android.util.Base64.NO_WRAP)
-        val voice = "data:$mime;base64,$b64"
+        val voice = "data:audio/wav;base64,$b64"
 
         val messages = listOf(Message("user", ""), Message("assistant", text))
         val req = TtsRequest(model = "mimo-v2.5-tts-voiceclone", messages = messages, audio = AudioConfig(format = fmt, voice = voice))
@@ -168,11 +170,116 @@ class CloneFragment : Fragment() {
             val ext = if (fmt == "mp3") ".mp3" else ".wav"
             audioFile = File(requireContext().cacheDir, "clone_${System.currentTimeMillis()}$ext").apply { writeBytes(bytes) }
             binding.tvStatus.text = "成功！"
-        } catch (e: retrofit2.HttpException) {
+        } catch (e: HttpException) {
             val errBody = e.response()?.errorBody()?.string() ?: "无响应体"
             throw Exception("HTTP ${e.code()}: $errBody")
         }
     }
+
+    private fun convertToWav(src: File): File {
+        if (src.extension.lowercase() == "wav") return src
+        val outFile = File(requireContext().cacheDir, "conv_${System.currentTimeMillis()}.wav")
+        val extractor = MediaExtractor()
+        extractor.setDataSource(src.absolutePath)
+        extractor.selectTrack(0)
+        val srcFormat = extractor.getTrackFormat(0)
+        val mime = srcFormat.getString(android.media.MediaFormat.KEY_MIME) ?: throw Exception("无法识别音频格式")
+        val decoder = MediaCodec.createDecoderByType(mime)
+        decoder.configure(srcFormat, null, null, 0)
+        decoder.start()
+
+        val pcmData = mutableListOf<Byte>()
+        val bufferInfo = MediaCodec.BufferInfo()
+        var inputDone = false
+        var outputDone = false
+
+        while (!outputDone) {
+            // 尝试送入输入数据
+            if (!inputDone) {
+                val inIdx = decoder.dequeueInputBuffer(10000)
+                if (inIdx >= 0) {
+                    val buf = decoder.getInputBuffer(inIdx)!!
+                    val size = extractor.readSampleData(buf, 0)
+                    if (size < 0) {
+                        decoder.queueInputBuffer(inIdx, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
+                        inputDone = true
+                    } else {
+                        decoder.queueInputBuffer(inIdx, 0, size, extractor.sampleTime, 0)
+                        extractor.advance()
+                    }
+                }
+            }
+            // 取出输出数据
+            val outIdx = decoder.dequeueOutputBuffer(bufferInfo, 10000)
+            if (outIdx >= 0) {
+                val outBuf = decoder.getOutputBuffer(outIdx)!!
+                val arr = ByteArray(bufferInfo.size)
+                outBuf.get(arr)
+                pcmData.addAll(arr.toList())
+                decoder.releaseOutputBuffer(outIdx, false)
+                if (bufferInfo.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) outputDone = true
+            }
+        }
+        decoder.stop(); decoder.release()
+        extractor.release()
+
+        // 重采样到 24kHz 单声道
+        val srcRate = srcFormat.getInteger(android.media.MediaFormat.KEY_SAMPLE_RATE)
+        val srcCh = srcFormat.getInteger(android.media.MediaFormat.KEY_CHANNEL_COUNT)
+        val rawPcm = pcmData.toByteArray()
+        val resampled = resamplePcm(rawPcm, srcRate, srcCh, 24000, 1)
+
+        val byteRate = 24000 * 2
+        FileOutputStream(outFile).use { fos ->
+            fos.write("RIFF".toByteArray())
+            fos.write(intLe(resampled.size + 36))
+            fos.write("WAVE".toByteArray())
+            fos.write("fmt ".toByteArray())
+            fos.write(intLe(16))
+            fos.write(shortLe(1))
+            fos.write(shortLe(1))
+            fos.write(intLe(24000))
+            fos.write(intLe(byteRate))
+            fos.write(shortLe(2))
+            fos.write(shortLe(16))
+            fos.write("data".toByteArray())
+            fos.write(intLe(resampled.size))
+            fos.write(resampled)
+        }
+        return outFile
+    }
+
+    private fun resamplePcm(pcm: ByteArray, srcRate: Int, srcCh: Int, dstRate: Int, dstCh: Int): ByteArray {
+        val samples = ShortArray(pcm.size / 2)
+        ByteBuffer.wrap(pcm).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().get(samples)
+        val mono = if (srcCh > 1) {
+            ShortArray(samples.size / srcCh) { i ->
+                var sum = 0L
+                for (c in 0 until srcCh) sum += samples[i * srcCh + c]
+                (sum / srcCh).toShort()
+            }
+        } else samples
+        if (srcRate == dstRate) return shortsToBytes(mono)
+        val ratio = srcRate.toDouble() / dstRate
+        val outLen = (mono.size / ratio).toInt().coerceAtLeast(1)
+        val out = ShortArray(outLen)
+        for (i in 0 until outLen) {
+            val pos = i * ratio
+            val idx = pos.toInt().coerceIn(0, mono.size - 2)
+            val frac = (pos - idx).toFloat().coerceIn(0f, 1f)
+            out[i] = (mono[idx] * (1 - frac) + mono[idx + 1] * frac).toInt().toShort()
+        }
+        return shortsToBytes(out)
+    }
+
+    private fun shortsToBytes(s: ShortArray): ByteArray {
+        val buf = ByteBuffer.allocate(s.size * 2).order(ByteOrder.LITTLE_ENDIAN)
+        buf.asShortBuffer().put(s)
+        return buf.array()
+    }
+
+    private fun intLe(v: Int) = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(v).array()
+    private fun shortLe(v: Short) = ByteBuffer.allocate(2).order(ByteOrder.LITTLE_ENDIAN).putShort(v).array()
 
     private suspend fun generateConfucius(text: String, ref: File) {
         val lang = binding.spinnerLang.text.toString()
