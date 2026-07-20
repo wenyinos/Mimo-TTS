@@ -36,6 +36,7 @@ cp .env.example .env
 ```
 MIMO_API_KEY=your_api_key_here       # MiMo API Key
 QWEN_API_KEY=your_dashscope_key_here # 阿里云百炼 API Key（使用 Qwen TTS 时需要）
+QWEN_WS_URL=wss://ws-xxx.cn-beijing.maas.aliyuncs.com/api-ws/v1/inference  # Qwen TTS WebSocket 地址
 APP_PASSWORD=your_password            # 访问密码（可选，为空则无密码）
 GRADIO_SHARE=false                    # 是否生成临时公开链接
 ```
