@@ -15,10 +15,10 @@ client = OpenAI(
 )
 
 QWEN_API_KEY = os.environ.get("QWEN_API_KEY", "").strip()
-QWEN_WS_URL = os.environ.get("QWEN_WS_URL", "").strip()
+QWEN_WORKSPACE_ID = os.environ.get("QWEN_WORKSPACE_ID", "").strip()
 
 VOICES = ["mimo_default", "冰糖", "茉莉", "苏打", "白桦", "Mia", "Chloe", "Milo", "Dean"]
-QWEN_VOICES = ["Cherry", "Alice", "Serena", "Ethan", "Chelsie"]
+QWEN_VOICES = ["longanlingxin", "longanlufeng", "longanhuan_v3.6", "longjielidou_v3.6", "loongeva_v3.6", "loongjohn"]
 QWEN_MODELS = ["qwen-audio-3.0-tts-plus", "qwen-audio-3.0-tts-flash"]
 
 
@@ -205,42 +205,56 @@ def tts_confucius(text: str, ref_audio: str, language: str):
 
 
 def tts_qwen(text: str, voice: str, model: str, fmt: str):
-    """Qwen TTS 语音合成（DashScope WebSocket API）。"""
+    """Qwen TTS 语音合成（HTTP REST API）。"""
     if not QWEN_API_KEY:
         return None, "错误：未配置 QWEN_API_KEY"
-    if not QWEN_WS_URL:
-        return None, "错误：未配置 QWEN_WS_URL"
+    if not QWEN_WORKSPACE_ID:
+        return None, "错误：未配置 QWEN_WORKSPACE_ID"
     if not text.strip():
         return None, "请输入要合成的文本"
 
     try:
-        import dashscope
-        from dashscope.audio.tts_v2 import SpeechSynthesizer, AudioFormat
-
-        dashscope.api_key = QWEN_API_KEY
-
-        audio_fmt = AudioFormat.MP3_24000HZ_MONO_256KBPS if fmt == "mp3" else AudioFormat.WAV_24000HZ_MONO_16BIT
-        synthesizer = SpeechSynthesizer(
-            model=model,
-            voice=voice,
-            format=audio_fmt,
-            url=QWEN_WS_URL,
+        url = f"https://{QWEN_WORKSPACE_ID}.cn-beijing.maas.aliyuncs.com/api/v1/services/audio/tts/SpeechSynthesizer"
+        resp = requests.post(
+            url,
+            headers={
+                "Authorization": f"Bearer {QWEN_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": model,
+                "input": {
+                    "text": text.strip(),
+                    "voice": voice,
+                    "format": fmt,
+                    "sample_rate": 24000,
+                },
+            },
+            timeout=120,
         )
-        audio = synthesizer.call(text.strip())
+        resp.raise_for_status()
+        data = resp.json()
 
-        debug = f"返回类型: {type(audio).__name__}, 长度: {len(audio) if audio else 'None'}"
-        if not audio or len(audio) == 0:
-            resp = synthesizer.get_response()
-            return None, f"错误：未返回音频数据 | {debug} | 响应: {resp}"
+        audio_info = data.get("output", {}).get("audio", {})
+        audio_data = audio_info.get("data", "")
+        audio_url = audio_info.get("url", "")
+
+        if audio_data:
+            audio_bytes = base64.b64decode(audio_data)
+        elif audio_url:
+            audio_resp = requests.get(audio_url, timeout=30)
+            audio_resp.raise_for_status()
+            audio_bytes = audio_resp.content
+        else:
+            return None, f"错误：未返回音频数据 | 响应: {data}"
 
         ext = ".mp3" if fmt == "mp3" else ".wav"
         tmp = tempfile.NamedTemporaryFile(suffix=ext, delete=False)
-        tmp.write(audio)
+        tmp.write(audio_bytes)
         tmp.close()
-        return tmp.name, f"成功！大小: {len(audio) / 1024:.1f} KB"
+        chars = data.get("usage", {}).get("characters", 0)
+        return tmp.name, f"成功！字符数: {chars}"
 
-    except ImportError:
-        return None, "错误：请安装 dashscope SDK（pip install dashscope）"
     except Exception as e:
         return None, f"错误：{type(e).__name__}: {e}"
 
