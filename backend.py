@@ -218,12 +218,17 @@ def tts_qwen(text: str, voice: str, model: str, fmt: str):
         from dashscope.audio.tts_v2 import SpeechSynthesizer
 
         dashscope.api_key = QWEN_API_KEY
-        dashscope.base_websocket_api_url = QWEN_WS_URL
 
-        synthesizer = SpeechSynthesizer(model=model, voice=voice)
+        audio_fmt = "mp3" if fmt == "mp3" else "wav"
+        synthesizer = SpeechSynthesizer(
+            model=model,
+            voice=voice,
+            format=audio_fmt,
+            url=QWEN_WS_URL,
+        )
         audio = synthesizer.call(text.strip())
 
-        if not audio:
+        if not audio or len(audio) == 0:
             return None, "错误：未返回音频数据"
 
         ext = ".mp3" if fmt == "mp3" else ".wav"
