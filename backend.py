@@ -228,8 +228,10 @@ def tts_qwen(text: str, voice: str, model: str, fmt: str):
         )
         audio = synthesizer.call(text.strip())
 
+        debug = f"返回类型: {type(audio).__name__}, 长度: {len(audio) if audio else 'None'}"
         if not audio or len(audio) == 0:
-            return None, "错误：未返回音频数据"
+            resp = synthesizer.get_response()
+            return None, f"错误：未返回音频数据 | {debug} | 响应: {resp}"
 
         ext = ".mp3" if fmt == "mp3" else ".wav"
         tmp = tempfile.NamedTemporaryFile(suffix=ext, delete=False)
@@ -240,7 +242,7 @@ def tts_qwen(text: str, voice: str, model: str, fmt: str):
     except ImportError:
         return None, "错误：请安装 dashscope SDK（pip install dashscope）"
     except Exception as e:
-        return None, f"错误：{e}"
+        return None, f"错误：{type(e).__name__}: {e}"
 
 
 def cleanup_audio_cache():
