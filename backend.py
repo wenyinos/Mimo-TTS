@@ -232,7 +232,8 @@ def tts_qwen(text: str, voice: str, model: str, fmt: str):
             },
             timeout=120,
         )
-        resp.raise_for_status()
+        if resp.status_code != 200:
+            return None, f"HTTP {resp.status_code}: {resp.text}"
         data = resp.json()
 
         audio_info = data.get("output", {}).get("audio", {})
