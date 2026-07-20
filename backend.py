@@ -215,11 +215,11 @@ def tts_qwen(text: str, voice: str, model: str, fmt: str):
 
     try:
         import dashscope
-        from dashscope.audio.tts_v2 import SpeechSynthesizer
+        from dashscope.audio.tts_v2 import SpeechSynthesizer, AudioFormat
 
         dashscope.api_key = QWEN_API_KEY
 
-        audio_fmt = "mp3" if fmt == "mp3" else "wav"
+        audio_fmt = AudioFormat.MP3_24000HZ_MONO_256KBPS if fmt == "mp3" else AudioFormat.WAV_24000HZ_MONO_16BIT
         synthesizer = SpeechSynthesizer(
             model=model,
             voice=voice,
