@@ -20,8 +20,9 @@
 
 ### Qwen TTS（阿里云百炼）
 - **qwen-audio-3.0-tts-plus** — 高音质专业版，适合有声书、影视配音等场景
+  - 音色：longanlingxin、longanlufeng
 - **qwen-audio-3.0-tts-flash** — 低延迟快速版，适合实时交互场景
-- 预置音色：longanlingxin、longanlufeng、longanhuan_v3.6、longjielidou_v3.6、loongeva_v3.6、loongjohn
+  - 音色：longanhuan_v3.6、longjielidou_v3.6、loongeva_v3.6、loongjohn
 - 详见 [音色列表](https://help.aliyun.com/zh/model-studio/qwen-audio-tts-voice-list)
 
 ## Web 版（Gradio）

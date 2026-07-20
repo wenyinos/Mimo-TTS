@@ -18,8 +18,11 @@ QWEN_API_KEY = os.environ.get("QWEN_API_KEY", "").strip()
 QWEN_WORKSPACE_ID = os.environ.get("QWEN_WORKSPACE_ID", "").strip()
 
 VOICES = ["mimo_default", "冰糖", "茉莉", "苏打", "白桦", "Mia", "Chloe", "Milo", "Dean"]
-QWEN_VOICES = ["longanlingxin", "longanlufeng", "longanhuan_v3.6", "longjielidou_v3.6", "loongeva_v3.6", "loongjohn"]
-QWEN_MODELS = ["qwen-audio-3.0-tts-plus", "qwen-audio-3.0-tts-flash"]
+QWEN_VOICES = {
+    "qwen-audio-3.0-tts-plus": ["longanlingxin", "longanlufeng"],
+    "qwen-audio-3.0-tts-flash": ["longanhuan_v3.6", "longjielidou_v3.6", "loongeva_v3.6", "loongjohn"],
+}
+QWEN_MODELS = list(QWEN_VOICES.keys())
 
 
 def _convert_to_wav(src_path: str) -> str:

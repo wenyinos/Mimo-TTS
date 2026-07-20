@@ -117,15 +117,18 @@ with gr.Blocks(**_blocks_kwargs) as demo:
                 with gr.Row(equal_height=False):
                     with gr.Column(scale=1):
                         t4_text = gr.Textbox(label="合成文本", lines=4, placeholder="输入要转为语音的文本...")
-                        with gr.Row():
-                            t4_model = gr.Dropdown(choices=QWEN_MODELS, value=QWEN_MODELS[0], label="模型", scale=2)
-                            t4_voice = gr.Dropdown(choices=QWEN_VOICES, value=QWEN_VOICES[0], label="音色", scale=1)
+                        t4_model = gr.Dropdown(choices=QWEN_MODELS, value=QWEN_MODELS[0], label="模型")
+                        t4_voice = gr.Dropdown(choices=QWEN_VOICES[QWEN_MODELS[0]], value=QWEN_VOICES[QWEN_MODELS[0]][0], label="音色")
                         t4_fmt = gr.Dropdown(choices=["mp3", "wav"], value="mp3", label="输出格式")
                         t4_btn = gr.Button("生成语音", variant="primary", size="lg")
                     with gr.Column(scale=1):
                         t4_audio = gr.Audio(label="合成结果", type="filepath")
                         t4_status = gr.Textbox(label="状态", interactive=False, elem_classes="status-box")
 
+            def _update_qwen_voices(model):
+                return gr.update(choices=QWEN_VOICES[model], value=QWEN_VOICES[model][0])
+
+            t4_model.change(_update_qwen_voices, [t4_model], [t4_voice])
             t4_btn.click(tts_qwen, [t4_text, t4_voice, t4_model, t4_fmt], [t4_audio, t4_status])
 
         with gr.Row():
