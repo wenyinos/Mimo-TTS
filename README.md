@@ -1,6 +1,6 @@
 # MiMo TTS Studio
 
-基于小米 MiMo-V2.5-TTS 系列模型和 Confucius4-TTS 的语音合成应用，提供 Web 版（Gradio）和 Android 原生版。
+多引擎语音合成应用，支持 MiMo TTS / Confucius4-TTS / Qwen TTS，提供 Web 版（Gradio）和 Android 原生版。
 
 ## 功能
 
@@ -18,6 +18,11 @@
 - 通过自然语言描述生成任意音色
 - 支持智能文本优化（optimize_text_preview）
 
+### Qwen TTS（阿里云百炼）
+- **qwen-audio-3.0-tts-plus** — 高音质专业版，适合有声书、影视配音等场景
+- **qwen-audio-3.0-tts-flash** — 低延迟快速版，适合实时交互场景
+- 5 种预置音色：Cherry、Alice、Serena、Ethan、Chelsie
+
 ## Web 版（Gradio）
 
 ### 1. 配置
@@ -29,11 +34,15 @@ cp .env.example .env
 编辑 `.env`：
 
 ```
-MIMO_API_KEY=your_api_key_here    # MiMo API Key（必填）
-APP_PASSWORD=your_password         # 访问密码（可选，为空则无密码）
+MIMO_API_KEY=your_api_key_here       # MiMo API Key
+QWEN_API_KEY=your_dashscope_key_here # 阿里云百炼 API Key（使用 Qwen TTS 时需要）
+APP_PASSWORD=your_password            # 访问密码（可选，为空则无密码）
+GRADIO_SHARE=false                    # 是否生成临时公开链接
 ```
 
-API Key 可在 [MiMo 开放平台](https://mimo.mi.com/) 控制台获取。
+API Key 获取：
+- MiMo：[MiMo 开放平台](https://mimo.mi.com/)
+- Qwen：[阿里云百炼控制台](https://bailian.console.aliyun.com/)
 
 > Confucius4-TTS 后端无需 API Key，直接调用公开服务。
 
@@ -42,14 +51,9 @@ API Key 可在 [MiMo 开放平台](https://mimo.mi.com/) 控制台获取。
 #### 使用 uv（推荐）
 
 ```bash
-# 安装 uv（如未安装）
 curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# 创建虚拟环境并安装依赖
 uv venv
 uv pip install -r requirements.txt
-
-# 激活虚拟环境并运行
 source .venv/bin/activate
 python app.py
 ```
@@ -93,7 +97,9 @@ python app.py
 
 | 模型 | Endpoint | 认证 |
 |------|----------|------|
-| mimo-v2.5-tts | `https://api.xiaomimimo.com/v1/chat/completions` | API Key |
-| mimo-v2.5-tts-voiceclone | 同上 | API Key |
-| mimo-v2.5-tts-voicedesign | 同上 | API Key |
+| mimo-v2.5-tts | `https://api.xiaomimimo.com/v1/chat/completions` | MiMo API Key |
+| mimo-v2.5-tts-voiceclone | 同上 | MiMo API Key |
+| mimo-v2.5-tts-voicedesign | 同上 | MiMo API Key |
 | Confucius4-TTS | `https://confucius4-tts.youdao.com/gradio/` | 无需认证 |
+| qwen-audio-3.0-tts-plus | `https://dashscope.aliyuncs.com/api/v1` | DashScope API Key |
+| qwen-audio-3.0-tts-flash | 同上 | DashScope API Key |

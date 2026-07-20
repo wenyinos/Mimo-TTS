@@ -3,7 +3,7 @@ import os
 import gradio as gr
 from dotenv import load_dotenv
 
-from backend import CONFUCIUS_LANGUAGES, VOICES, tts_clone, tts_confucius, tts_design, tts_preset, cleanup_audio_cache
+from backend import CONFUCIUS_LANGUAGES, VOICES, QWEN_VOICES, QWEN_MODELS, tts_clone, tts_confucius, tts_design, tts_preset, tts_qwen, cleanup_audio_cache
 
 load_dotenv()
 APP_PASSWORD = os.environ.get("APP_PASSWORD", "").strip()
@@ -41,7 +41,7 @@ with gr.Blocks(**_blocks_kwargs) as demo:
         gr.HTML("""
         <div class="app-header">
             <h1>MiMo TTS Studio</h1>
-            <p>基于小米 MiMo-V2.5-TTS 系列模型 · 支持预置音色 / 音色克隆 / 音色设计</p>
+            <p>支持 MiMo TTS / Confucius4-TTS / Qwen TTS</p>
         </div>
         """)
 
@@ -111,6 +111,22 @@ with gr.Blocks(**_blocks_kwargs) as demo:
                         t3_status = gr.Textbox(label="状态", interactive=False, elem_classes="status-box")
 
             t3_btn.click(tts_design, [t3_text, t3_desc, t3_opt, t3_fmt], [t3_audio, t3_status])
+
+            # ─── Tab 4: Qwen TTS ───
+            with gr.Tab("Qwen TTS"):
+                with gr.Row(equal_height=False):
+                    with gr.Column(scale=1):
+                        t4_text = gr.Textbox(label="合成文本", lines=4, placeholder="输入要转为语音的文本...")
+                        with gr.Row():
+                            t4_model = gr.Dropdown(choices=QWEN_MODELS, value=QWEN_MODELS[0], label="模型", scale=2)
+                            t4_voice = gr.Dropdown(choices=QWEN_VOICES, value=QWEN_VOICES[0], label="音色", scale=1)
+                        t4_fmt = gr.Dropdown(choices=["mp3", "wav"], value="mp3", label="输出格式")
+                        t4_btn = gr.Button("生成语音", variant="primary", size="lg")
+                    with gr.Column(scale=1):
+                        t4_audio = gr.Audio(label="合成结果", type="filepath")
+                        t4_status = gr.Textbox(label="状态", interactive=False, elem_classes="status-box")
+
+            t4_btn.click(tts_qwen, [t4_text, t4_voice, t4_model, t4_fmt], [t4_audio, t4_status])
 
         with gr.Row():
             cleanup_btn = gr.Button("清理缓存", variant="secondary", size="sm")

@@ -14,7 +14,11 @@ client = OpenAI(
     base_url="https://api.xiaomimimo.com/v1",
 )
 
+QWEN_API_KEY = os.environ.get("QWEN_API_KEY", "").strip()
+
 VOICES = ["mimo_default", "冰糖", "茉莉", "苏打", "白桦", "Mia", "Chloe", "Milo", "Dean"]
+QWEN_VOICES = ["Cherry", "Alice", "Serena", "Ethan", "Chelsie"]
+QWEN_MODELS = ["qwen-audio-3.0-tts-plus", "qwen-audio-3.0-tts-flash"]
 
 
 def _convert_to_wav(src_path: str) -> str:
@@ -194,6 +198,54 @@ def tts_confucius(text: str, ref_audio: str, language: str):
         tmp.write(resp_audio.content)
         tmp.close()
         return tmp.name, status_msg
+
+    except Exception as e:
+        return None, f"错误：{e}"
+
+
+def tts_qwen(text: str, voice: str, model: str, fmt: str):
+    """Qwen TTS 语音合成（DashScope API）。"""
+    if not QWEN_API_KEY:
+        return None, "错误：未配置 QWEN_API_KEY"
+    if not text.strip():
+        return None, "请输入要合成的文本"
+
+    try:
+        resp = requests.post(
+            "https://dashscope.aliyuncs.com/api/v1",
+            headers={
+                "Authorization": f"Bearer {QWEN_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": model,
+                "input": {"text": text.strip()},
+                "parameters": {"voice": voice},
+            },
+            timeout=120,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+
+        audio_info = data.get("output", {}).get("audio", {})
+        audio_data = audio_info.get("data", "")
+        audio_url = audio_info.get("url", "")
+
+        if audio_data:
+            audio_bytes = base64.b64decode(audio_data)
+        elif audio_url:
+            audio_resp = requests.get(audio_url, timeout=30)
+            audio_resp.raise_for_status()
+            audio_bytes = audio_resp.content
+        else:
+            return None, "错误：未返回音频数据"
+
+        ext = ".mp3" if fmt == "mp3" else ".wav"
+        tmp = tempfile.NamedTemporaryFile(suffix=ext, delete=False)
+        tmp.write(audio_bytes)
+        tmp.close()
+        chars = data.get("usage", {}).get("characters", 0)
+        return tmp.name, f"成功！字符数: {chars}"
 
     except Exception as e:
         return None, f"错误：{e}"
