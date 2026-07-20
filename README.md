@@ -21,7 +21,8 @@
 ### Qwen TTS（阿里云百炼）
 - **qwen-audio-3.0-tts-plus** — 高音质专业版，适合有声书、影视配音等场景
 - **qwen-audio-3.0-tts-flash** — 低延迟快速版，适合实时交互场景
-- 5 种预置音色：Cherry、Alice、Serena、Ethan、Chelsie
+- 预置音色：longanlingxin、longanlufeng、longanhuan_v3.6、longjielidou_v3.6、loongeva_v3.6、loongjohn
+- 详见 [音色列表](https://help.aliyun.com/zh/model-studio/qwen-audio-tts-voice-list)
 
 ## Web 版（Gradio）
 
@@ -34,11 +35,11 @@ cp .env.example .env
 编辑 `.env`：
 
 ```
-MIMO_API_KEY=your_api_key_here       # MiMo API Key
-QWEN_API_KEY=your_dashscope_key_here # 阿里云百炼 API Key（使用 Qwen TTS 时需要）
-QWEN_WS_URL=wss://ws-xxx.cn-beijing.maas.aliyuncs.com/api-ws/v1/inference  # Qwen TTS WebSocket 地址
-APP_PASSWORD=your_password            # 访问密码（可选，为空则无密码）
-GRADIO_SHARE=false                    # 是否生成临时公开链接
+MIMO_API_KEY=your_api_key_here           # MiMo API Key
+QWEN_API_KEY=your_dashscope_key_here     # 阿里云百炼 API Key（使用 Qwen TTS 时需要）
+QWEN_WORKSPACE_ID=your_workspace_id      # 百炼业务空间 ID
+APP_PASSWORD=your_password                # 访问密码（可选，为空则无密码）
+GRADIO_SHARE=false                        # 是否生成临时公开链接
 ```
 
 API Key 获取：
@@ -102,5 +103,5 @@ python app.py
 | mimo-v2.5-tts-voiceclone | 同上 | MiMo API Key |
 | mimo-v2.5-tts-voicedesign | 同上 | MiMo API Key |
 | Confucius4-TTS | `https://confucius4-tts.youdao.com/gradio/` | 无需认证 |
-| qwen-audio-3.0-tts-plus | `https://dashscope.aliyuncs.com/api/v1` | DashScope API Key |
+| qwen-audio-3.0-tts-plus | `https://{WorkspaceId}.cn-beijing.maas.aliyuncs.com/api/v1/services/audio/tts/SpeechSynthesizer` | DashScope API Key |
 | qwen-audio-3.0-tts-flash | 同上 | DashScope API Key |
