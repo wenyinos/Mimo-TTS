@@ -207,7 +207,7 @@ def tts_confucius(text: str, ref_audio: str, language: str):
         return None, f"错误：{e}"
 
 
-def tts_qwen(text: str, voice: str, model: str, fmt: str):
+def tts_qwen(text: str, voice: str, model: str, fmt: str, instruction: str = ""):
     """Qwen TTS 语音合成（HTTP REST API）。"""
     if not QWEN_API_KEY:
         return None, "错误：未配置 QWEN_API_KEY"
@@ -218,21 +218,21 @@ def tts_qwen(text: str, voice: str, model: str, fmt: str):
 
     try:
         url = f"https://{QWEN_WORKSPACE_ID}.cn-beijing.maas.aliyuncs.com/api/v1/services/audio/tts/SpeechSynthesizer"
+        inp = {
+            "text": text.strip(),
+            "voice": voice,
+            "format": fmt,
+            "sample_rate": 24000,
+        }
+        if instruction.strip():
+            inp["instruction"] = instruction.strip()
         resp = requests.post(
             url,
             headers={
                 "Authorization": f"Bearer {QWEN_API_KEY}",
                 "Content-Type": "application/json",
             },
-            json={
-                "model": model,
-                "input": {
-                    "text": text.strip(),
-                    "voice": voice,
-                    "format": fmt,
-                    "sample_rate": 24000,
-                },
-            },
+            json={"model": model, "input": inp},
             timeout=120,
         )
         if resp.status_code != 200:

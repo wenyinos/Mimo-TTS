@@ -116,7 +116,12 @@ with gr.Blocks(**_blocks_kwargs) as demo:
             with gr.Tab("Qwen TTS"):
                 with gr.Row(equal_height=False):
                     with gr.Column(scale=1):
-                        t4_text = gr.Textbox(label="合成文本", lines=4, placeholder="输入要转为语音的文本...")
+                        t4_text = gr.Textbox(label="合成文本", lines=3, placeholder="输入要转为语音的文本...")
+                        t4_instruction = gr.Textbox(
+                            label="指令控制（可选）",
+                            lines=2,
+                            placeholder="如：语速较快，带有明显的上扬语调",
+                        )
                         t4_model = gr.Dropdown(choices=QWEN_MODELS, value=QWEN_MODELS[0], label="模型")
                         t4_voice = gr.Dropdown(choices=QWEN_VOICES[QWEN_MODELS[0]], value=QWEN_VOICES[QWEN_MODELS[0]][0], label="音色")
                         t4_fmt = gr.Dropdown(choices=["mp3", "wav"], value="mp3", label="输出格式")
@@ -124,12 +129,20 @@ with gr.Blocks(**_blocks_kwargs) as demo:
                     with gr.Column(scale=1):
                         t4_audio = gr.Audio(label="合成结果", type="filepath")
                         t4_status = gr.Textbox(label="状态", interactive=False, elem_classes="status-box")
+                        gr.Markdown("""
+**使用说明：**
+- **指令控制**：用自然语言描述语音风格（音调、语速、情感等），如「沉稳的中年男性，语速缓慢」
+- **文本内嵌标签**：在合成文本中直接嵌入标签，如 `[excited]今天天气真好！[laughing]`
+- **控制类标签**：`[happy]` `[sad]` `[angry]` `[excited]` `[crying]` 等，作用于后续文本
+- **富语言标签**：`[laughing]` `[sighing]` `[breathing]` 等，在当前位置插入拟声效果
+- **描述维度参考**：音调（低沉/清脆）、语速（偏快/缓慢）、情感（温柔/激昂）、年龄、性别
+""")
 
             def _update_qwen_voices(model):
                 return gr.update(choices=QWEN_VOICES[model], value=QWEN_VOICES[model][0])
 
             t4_model.change(_update_qwen_voices, [t4_model], [t4_voice])
-            t4_btn.click(tts_qwen, [t4_text, t4_voice, t4_model, t4_fmt], [t4_audio, t4_status])
+            t4_btn.click(tts_qwen, [t4_text, t4_voice, t4_model, t4_fmt, t4_instruction], [t4_audio, t4_status])
 
         with gr.Row():
             cleanup_btn = gr.Button("清理缓存", variant="secondary", size="sm")
