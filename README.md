@@ -39,7 +39,7 @@ cp .env.example .env
 MIMO_API_KEY=your_api_key_here           # MiMo API Key
 QWEN_API_KEY=your_dashscope_key_here     # 阿里云百炼 API Key（使用 Qwen TTS 时需要）
 QWEN_WORKSPACE_ID=your_workspace_id      # 百炼业务空间 ID
-APP_PASSWORD=your_password                # 访问密码（可选，为空则无密码）
+APP_PASSWORD=your_password                # 访问密码（可选；设置后需在登录页输入密码，且保护全部后端 API）
 GRADIO_SHARE=false                        # 是否生成临时公开链接
 ```
 
@@ -71,6 +71,13 @@ python app.py
 浏览器访问 `http://127.0.0.1:7860`。
 
 > 需要系统安装 ffmpeg：`sudo apt install ffmpeg`（Ubuntu）或 `brew install ffmpeg`（macOS）
+
+### 3. 界面
+
+- 紫色主题（灵感来自[玟茵开源社区](https://wenyinos.com/)），支持**日间 / 夜间模式**切换（顶栏右上角按钮）
+- 响应式布局：宽屏内容区约为屏幕宽度的 3/4 居中显示，手机端全宽
+- 全部资源本地化：中文字体（Noto Sans SC）等随项目分发，不引用任何外部 CDN
+- 设置 `APP_PASSWORD` 后为单密码登录：登录状态由浏览器记住，刷新无需重输；未登录时所有后端 API（含合成接口）均返回 401，防止绕过界面直接调用
 
 ## Android 版
 
